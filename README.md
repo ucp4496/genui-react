@@ -1,73 +1,73 @@
-# React + TypeScript + Vite
+# GenUI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+GenUI is an interactive proof-of-concept that demonstrates how a user interface can be dynamically modified using natural language. This project includes a mock data entry system designed to be intentionally simple so that UI changes driven by GenUI are easy to see, test, and iterate on.
 
-Currently, two official plugins are available:
+The goal is to explore how users can shape and personalize software in real time — no manual UI editing required.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 1. Clone The Repo
+Clone this repo however you would like!
 
-## Expanding the ESLint configuration
+### 2. Install Dependencies
+Run a standard install for React projects:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Create an OpenAI API Key
+GenUI uses OpenAI to generate UI overrides.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+1. Go to OpenAI and create an API key.
+2. In your terminal, export the key:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+export OPENAI_API_KEY=[your key here]
+```
+
+(You can add this to your shell config if you don’t want to repeat it every session.)
+
+---
+
+## Running the Project
+
+You’ll need two terminals open.
+
+### Terminal 1 – Start the React App
+```bash
+npm run dev
+```
+
+### Terminal 2 – Start the GenUI Override Server
+```bash
+cd aiAPI
+node overrideServer.cjs
+```
+
+---
+
+## Testing It Out
+
+Once both servers are running:
+
+1. Open the local port shown in your React terminal.
+2. Use the GenUI interface to modify the mock data entry UI.
+3. Watch the layout and components update dynamically based on your prompts.
+
+This setup is intentionally lightweight so you can focus on experimenting, iterating, and seeing how far natural-language UI customization can go.
+
+---
+
+## Notes
+
+- This is a prototype environment meant for experimentation and research.
+- The data entry system is mock-only and exists purely to visualize UI changes.
+- If something breaks, try stopping both servers, deleting everything inside of the overrides folder, and then restarting both servers
+
+---
+
+Happy testing! ✨
 ```
