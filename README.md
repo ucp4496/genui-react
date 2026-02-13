@@ -70,4 +70,3 @@ This setup is intentionally lightweight so you can focus on experimenting, itera
 ---
 
 Happy testing! ✨
-```
