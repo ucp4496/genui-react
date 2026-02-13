@@ -1,8 +1,8 @@
 # GenUI
 
-GenUI is an interactive proof-of-concept that demonstrates how a user interface can be dynamically modified using natural language. This project includes a mock data entry system designed to be intentionally simple so that UI changes driven by GenUI are easy to see, test, and iterate on.
+GenUI is an interactive proof-of-concept that demonstrates how a user interface can be dynamically modified using natural language. This project includes a mock warehouse data entry system designed to be intentionally simple so that UI changes driven by GenUI are easy to see, test, and iterate on.
 
-The goal is to explore how users can shape and personalize software in real time — no manual UI editing required.
+The goal is to explore how users can shape and personalize software in real time, with no manual UI editing required.
 
 ---
 
