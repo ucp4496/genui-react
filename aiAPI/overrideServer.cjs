@@ -135,6 +135,84 @@ app.post("/override", async (req, res) => {
   }
 });
 
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function makeTimestampLocal() {
+  const d = new Date();
+  // YYYYMMDD-HHMMSS (safe for folder names on all OSes)
+  return (
+    `${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}-` +
+    `${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`
+  );
+}
+
+function isDirEmpty(dir) {
+  if (!fs.existsSync(dir)) return true;
+  return fs.readdirSync(dir).length === 0;
+}
+
+/**
+ * Move contents of `src/overrides/*` into `src/history-<timestamp>/...`
+ * Preserves subfolders. Returns number of moved top-level entries.
+ */
+function resetOverridesToHistory() {
+  const srcDir = overridesPath;
+  const srcRoot = path.dirname(overridesPath); // ../src
+  const stamp = makeTimestampLocal();
+  const historyDir = path.join(srcRoot, `history-${stamp}`);
+
+  // Ensure history folder always exists
+  fs.mkdirSync(historyDir, { recursive: true });
+
+  // Ensure overrides folder exists (your code already does this, but safe)
+  fs.mkdirSync(srcDir, { recursive: true });
+
+  const entries = fs.readdirSync(srcDir);
+  let movedCount = 0;
+
+  // Move each top-level entry from overrides into history
+  for (const entry of entries) {
+    const from = path.join(srcDir, entry);
+    const to = path.join(historyDir, entry);
+
+    // If something weird already exists in history, avoid clobbering by suffixing
+    let finalTo = to;
+    if (fs.existsSync(finalTo)) {
+      const ext = path.extname(entry);
+      const base = path.basename(entry, ext);
+      let i = 1;
+      do {
+        finalTo = path.join(historyDir, `${base}__${i}${ext}`);
+        i++;
+      } while (fs.existsSync(finalTo));
+    }
+
+    fs.renameSync(from, finalTo);
+    movedCount++;
+  }
+
+  // Recreate overrides folder (renameSync would have emptied it, but the dir still exists)
+  // If you ever decide to move the folder itself, keep this line anyway.
+  fs.mkdirSync(srcDir, { recursive: true });
+
+  return { historyDir, movedCount, timestamp: stamp, wasEmpty: entries.length === 0 };
+}
+
+app.post("/reset", (req, res) => {
+  try {
+    const result = resetOverridesToHistory();
+    res.json({
+      success: true,
+      ...result,
+    });
+  } catch (err) {
+    console.error("❌ Reset failed:", err);
+    res.status(500).json({ error: "Failed to reset overrides" });
+  }
+});
+
 app.listen(3001, () =>
   console.log("✅ Override server running at http://localhost:3001")
 );
