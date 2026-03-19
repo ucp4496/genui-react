@@ -13,6 +13,42 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const overridesPath = path.join(__dirname, "../src/overrides");
 const defaultsPath = path.join(__dirname, "../src/components/default");
+const historyPath = path.join(__dirname, "history.json");
+
+function ensureHistoryFile() {
+  if (!fs.existsSync(historyPath)) {
+    fs.writeFileSync(historyPath, JSON.stringify({ entries: [] }, null, 2), "utf-8");
+  }
+}
+
+function readHistory() {
+  ensureHistoryFile();
+
+  try {
+    const raw = fs.readFileSync(historyPath, "utf-8");
+    const parsed = JSON.parse(raw);
+
+    if (!parsed || !Array.isArray(parsed.entries)) {
+      return { entries: [] };
+    }
+
+    return parsed;
+  } catch (err) {
+    console.warn("⚠️ history.json was invalid, resetting it.");
+    return { entries: [] };
+  }
+}
+
+function writeHistory(historyObj) {
+  fs.writeFileSync(historyPath, JSON.stringify(historyObj, null, 2), "utf-8");
+}
+
+function countLines(str) {
+  if (!str) return 0;
+  return String(str).split(/\r?\n/).length;
+}
+
+ensureHistoryFile();
 
 if (!fs.existsSync(overridesPath)) {
   fs.mkdirSync(overridesPath, { recursive: true });
@@ -65,6 +101,7 @@ function getEffectiveFiles() {
 }
 
 app.post("/override", async (req, res) => {
+  const startTime = Date.now();
   const { instructions } = req.body;
 
   const effectiveFiles = getEffectiveFiles();
@@ -80,11 +117,13 @@ app.post("/override", async (req, res) => {
             
             You are a React code editor. You can rewrite components OR the root App file. Based on the file contents, rewrite the correct file that the user wants (generally, global changes occur in the root App file). Output only JSON mapping file names to code. 
             
-            Any style changes should use Tailwind classes if possible. Remove conflicting class names to ensure the override reflects the new styles clearly, but retain class names that are not conflicting (so for example if color is changed, keep all of the positioning classes). 
+            Any style changes should use Tailwind classes if possible. Remove conflicting class names to ensure the override reflects the new styles clearly, but retain class names that are not conflicting (so for example if color is changed, keep all of the positioning classes). If a user asks for a color that is not a default tailwind color, please try to infer the best tailwind color to use based on the user's description (e.g. "light blue" might be "blue-300", "dark red" might be "red-700"). If you cannot infer a reasonable tailwind color, use the closest default color and add an inline style for the exact color (e.g. style={{ color: "#123456" }}) to ensure the user's request is met as closely as possible.
             
             Import rule: Do not use relative imports between override files (e.g. ./RecordCard). If an override component needs another component, use getOverrideAwareComponent("Name", DefaultComponent) so it will load an override if present, otherwise use the default. Use the @/format as given in the base files.
 
-            In React controlled inputs, empty strings are valid values. Do not use ?? to provide fallback display text for string fields (because "" ?? "x" stays ""). If you need a fallback for empty strings, use || OR a placeholder. Defaults for form fields must be set in the draft initializer (container/actions), not inside the overlay component.
+            In React controlled inputs, empty strings are valid values. Do not use ?? to provide fallback display text for string fields (because "" ?? "x" stays ""). If you need a fallback for empty strings, use || OR a placeholder. Defaults for form fields must be set in the draft initializer (container/actions), not inside the overlay component. 
+            
+            Type safety requirement: do not generate overrides that introduce TypeScript compile errors. Reuse existing types whenever possible, infer prop and state types from the provided files, and add explicit annotations where necessary. If a precise type cannot be determined safely from context, use any rather than risking a type error.
             
             When generating overrides, understand whether the override instruction should takes precedence over the original logic. Based on the instructions, you might want to preserve old props, defaults, or conditions, or not. Generally speaking, if the user wants a static value changed where props might override them (such as default text), do not include props as a possible value. If the user wants something changed that should not affect or be affected by props values (such as coloring or sizing), keep the props in the original file as is. However, the override should always be a complete replacement of the original file’s logic, and never just a wrapper around it. If variables are declared in the original file, keep them and use them in the overwritten file, unless user instructions indicate otherwise. 
             
@@ -92,7 +131,7 @@ app.post("/override", async (req, res) => {
 
             The goal of the user's overrides is to help them use the sample application they have been given. Never allow them to replace the entire page with things that are not related to the app, and do not allow them to remove components off of the page.
 
-            SAFETY / SCOPE CONSTRAINTS (MANDATORY): You are editing a study application. Your job is ONLY to make changes that help the user complete the study tasks inside the existing app. You must NOT: replace the entire page with unrelated content (e.g. cats, memes, aesthetic-only pages), remove core app components or workflows (DataEntryShell, RecordList, AddEntryOverlay, correctness/status display, GenUI toggle), bypass or auto-complete the task for the user (no “auto-fill everything”, allow the user to “one-click finish all records”, or remove required fields. If the user requests any forbidden change, DO NOT comply. Instead, keep the application structure intact, and make the smallest helpful change that still respects their intent within the app's context. For example, if they ask “replace everything with a cute cat,” interpret it as “add a small cat-themed icon or subtle style accent” without removing or replacing app functionality.
+            SAFETY / SCOPE CONSTRAINTS (MANDATORY): You are editing a study application. Your job is ONLY to make changes that help the user complete the study tasks inside the existing app. You must NOT: replace the entire page with unrelated content (e.g. cats, memes, aesthetic-only pages), remove core app components or workflows, bypass or auto-complete the task for the user (no “auto-fill everything”, allow the user to “one-click finish”, or remove required fields. If the user requests any forbidden change, DO NOT comply. Instead, keep the application structure intact, and make the smallest helpful change that still respects their intent within the app's context. For example, if they ask “replace everything with a cute cat,” interpret it as “add a small cat-themed icon or subtle style accent” without removing or replacing app functionality.
 
             ALLOWED CHANGE TYPES: styling tweaks (colors, spacing, font sizes) as long as the app remains intentionally difficult and the task flow remains intact, adding helper UI inside existing components (labels, hints, tooltips) that does not remove required effort, adding optional buttons that perform single, legitimate sub-actions (e.g. paste required note into the Notes field) but DO NOT create “do everything” macros. Also, do default values changes ONLY via DraftDefaults / config modules (not by deleting fields or hiding components).
 
@@ -114,6 +153,22 @@ app.post("/override", async (req, res) => {
 
     const json = JSON.parse(response.choices[0].message.content);
 
+    const filesModified = Object.keys(json).length;
+
+    let linesChanged = 0;
+    for (const code of Object.values(json)) {
+      linesChanged += countLines(code);
+    }
+
+    const tokensUsed =
+      response.usage?.total_tokens ??
+      (
+        (response.usage?.prompt_tokens || 0) +
+        (response.usage?.completion_tokens || 0)
+      );
+
+    const durationMs = Date.now() - startTime;
+
     for (const [fileName, code] of Object.entries(json)) {
       // ✅ Normalize file paths so we only write to overrides folder
       let cleanName = fileName
@@ -127,6 +182,17 @@ app.post("/override", async (req, res) => {
       console.log(`✅ Wrote override: ${target}`);
     }
 
+    const history = readHistory();
+    history.entries.push({
+      prompt: instructions,
+      numberOfFilesModified: filesModified,
+      linesChanged,
+      tokensUsed,
+      durationMs,
+      createdAt: new Date().toISOString(),
+    });
+
+    writeHistory(history);
 
     res.json({ success: true, files: Object.keys(json) });
   } catch (err) {

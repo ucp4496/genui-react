@@ -79,7 +79,7 @@ export default function Overlay({ onSubmit, onClose }: OverlayProps) {
         <button
           onClick={onClose}
           disabled={loading || resetting}
-          className="text-gray-500 hover:text-black text-lg disabled:opacity-50"
+          className="text-yellow-500 hover:text-black text-lg disabled:opacity-50"
           aria-label="Close GenUI"
           title="Close"
         >
@@ -94,7 +94,7 @@ export default function Overlay({ onSubmit, onClose }: OverlayProps) {
       )}
 
       {resetMsg && (
-        <div className="mb-2 text-gray-700 text-xs">
+        <div className="mb-2 text-yellow-400 text-xs">
           {resetMsg}
         </div>
       )}

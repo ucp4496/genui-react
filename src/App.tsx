@@ -31,7 +31,7 @@ function AppWrapper() {
       {/* Overlay Toggle */}
       <button
         onClick={() => setOverlayOpen((prev) => !prev)}
-        className="fixed top-4 right-4 bg-blue-500 text-white px-3 py-2 rounded shadow z-40"
+        className="fixed bottom-4 right-4 bg-blue-500 text-white px-3 py-2 rounded shadow z-40"
       >
         {overlayOpen ? "Close GenUI" : "Open GenUI"}
       </button>

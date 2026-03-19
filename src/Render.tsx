@@ -8,7 +8,7 @@ import { getOverrideAwareComponent } from "@/ComponentResolver";
 
 
 // New default components (data entry app)
-import DataEntryShell from "./components/default/DataEntryShell";
+import BoardShell from "./components/default/BoardShell";
 
 export type UIComponent = {
   type: string;
@@ -24,7 +24,7 @@ const fallbackRegistry: Record<string, React.FC<any>> = {
   Header: DefaultHeader,
   Button: DefaultButton,
   Text: DefaultText,
-  DataEntryShell: DataEntryShell,
+  BoardShell,
 };
 
 const Renderer: React.FC<{ schema: UIComponent[]; ctx?: RenderCtx }> = ({ schema, ctx }) => {

@@ -3,15 +3,20 @@ import React from "react";
 type ButtonProps = {
   text?: string;
   onClick?: () => void;
-
-  // Macro/Action support
   action?: string;
   args?: any[];
-
   ctx?: any;
+  className?: string;
 };
 
-export default function Button({ text, onClick, action, args, ctx }: ButtonProps) {
+export default function Button({
+  text,
+  onClick,
+  action,
+  args,
+  ctx,
+  className,
+}: ButtonProps) {
   const handleClick = () => {
     if (onClick) return onClick();
 
@@ -25,7 +30,10 @@ export default function Button({ text, onClick, action, args, ctx }: ButtonProps
   return (
     <button
       onClick={handleClick}
-      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+      className={
+        className ??
+        "rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+      }
     >
       {text || "Default Button"}
     </button>

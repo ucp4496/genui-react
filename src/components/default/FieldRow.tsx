@@ -1,3 +1,5 @@
+import React from "react";
+
 export default function FieldRow({
   label,
   children,
@@ -10,8 +12,8 @@ export default function FieldRow({
   labelClassName?: string;
 }) {
   return (
-    <div className={`flex gap-6 ${alignTop ? "items-start" : "items-center"}`}>
-      <div className={`w-[110px] text-xs ${labelClassName ?? "text-yellow-400"}`}>
+    <div className={`flex gap-4 ${alignTop ? "items-start" : "items-center"}`}>
+      <div className={`w-[110px] pt-1 text-sm ${labelClassName ?? "text-yellow-300"}`}>
         {label}
       </div>
       <div className="flex-1">{children}</div>
